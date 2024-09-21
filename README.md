@@ -29,12 +29,17 @@ Rename it to `.env` and fill it with the values you got earlier.
 
 | Name             | Description                         | Required | Default                         |
 |------------------|-------------------------------------|:--------:|---------------------------------|
-| DOMAIN           | your Porkbun domain                 | yes      | -                               |
+| DOMAINS          | your Porkbun domain(s)              | yes      | -                               |
 | API_KEY          | your Porkbun API key                | yes      | -                               |
 | SECRET_KEY       | your Porkbun API secret key         | yes      | -                               |
 | API_URL          | the Porkbun API address             | no       | https://porkbun.com/api/json/v3 |
-| CERTIFICATE_PATH | the path to save the certificate to | no       | /etc/porkcron/certificate.pem   |
-| PRIVATE_KEY_PATH | the path to save the private key to | no       | /etc/porkcron/private_key.pem   |
+| CERTIFICATE_PATH | the path to save the certificate to | no       | /etc/porkcron                   |
+| PRIVATE_KEY_PATH | the path to save the private key to | no       | /etc/porkcron                   |
+| CERTIFICATE_FILE | the file to save the certificate to | no       | certificate.pem                 |
+| PRIVATE_KEY_FILE | the file to save the private key to | no       | private_key.pem                 |
+
+Note that a sub-directory for each domain will be made inside the
+`CERTIFICATE_PATH` and `PRIVATE_KEY_PATH` directories.
 
 Now you need to choose the installation method.
 
