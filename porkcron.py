@@ -8,42 +8,53 @@ from urllib import request
 
 # https://porkbun.com/api/json/v3/documentation
 DEFAULT_API_URL = "https://porkbun.com/api/json/v3"
-DEFAULT_CERTIFICATE_PATH = "/etc/porkcron/certificate.crt"
-DEFAULT_PRIVATE_KEY_PATH = "/etc/porkcron/private_key.key"
+DEFAULT_CERTIFICATE_PATH = "/etc/porkcron"
+DEFAULT_PRIVATE_KEY_PATH = "/etc/porkcron"
+DEFAULT_CERTIFICATE_FILE = "certificate.pem"
+DEFAULT_PRIVATE_KEY_FILE = "private_key.pem"
 
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
     logging.info("running SSL certificate renewal script")
 
-    domain = getenv_or_exit("DOMAIN")
+    domains = getenv_or_exit("DOMAINS").split(',')
     api_key = getenv_or_exit("API_KEY")
     secret_key = getenv_or_exit("SECRET_KEY")
 
-    url = os.getenv("API_URL", DEFAULT_API_URL) + "/ssl/retrieve/" + domain
-    body = json.dumps({"apikey": api_key, "secretapikey": secret_key}).encode()
-    headers = {"Content-Type": "application/json"}
+    for domain in domains:
+        domain = domain.strip()
 
-    logging.info(f"downloading SSL bundle for {domain}")
-    req = request.Request(url, data=body, headers=headers, method="POST")
-    with request.urlopen(req) as resp:
-        data = json.load(resp)
+        url = os.getenv("API_URL", DEFAULT_API_URL) + "/ssl/retrieve/" + domain
+        body = json.dumps({"apikey": api_key, "secretapikey": secret_key}).encode()
+        headers = {"Content-Type": "application/json"}
 
-    if data["status"] == "ERROR":
-        logging.error(data["message"])
-        sys.exit(1)
+        logging.info(f"\tdownloading SSL bundle for {domain}")
+        req = request.Request(url, data=body, headers=headers, method="POST")
+        with request.urlopen(req) as resp:
+            data = json.load(resp)
 
-    certificate_path = os.getenv("CERTIFICATE_PATH", DEFAULT_CERTIFICATE_PATH)
-    logging.info(f"saving certificate to {certificate_path}")
-    with open(certificate_path, "w") as f:
-        f.write(data["certificatechain"])
+        if data["status"] == "ERROR":
+            logging.error(data["message"])
+            sys.exit(1)
 
-    private_key_path = os.getenv("PRIVATE_KEY_PATH", DEFAULT_PRIVATE_KEY_PATH)
-    logging.info(f"saving private key to {private_key_path}")
-    with open(private_key_path, "w") as f:
-        f.write(data["privatekey"])
+        certificate_path = os.getenv("CERTIFICATE_PATH", DEFAULT_CERTIFICATE_PATH)
+        certificate_path = os.path.join(certificate_path, domain)
+        os.makedirs(certificate_path, exist_ok=True)
+        certificate_path = os.path.join(certificate_path, os.getenv("CERTIFICATE_FILE", DEFAULT_CERTIFICATE_FILE))
+        logging.info(f"\t\tsaving certificate to {certificate_path}")
+        with open(certificate_path, "w") as f:
+            f.write(data["certificatechain"])
 
-    logging.info("SSL certificate has been successfully renewed")
+        private_key_path = os.getenv("PRIVATE_KEY_PATH", DEFAULT_PRIVATE_KEY_PATH)
+        private_key_path = os.path.join(private_key_path, domain)
+        os.makedirs(private_key_path, exist_ok=True)
+        private_key_path = os.path.join(private_key_path, os.getenv("PRIVATE_KEY_FILE", DEFAULT_PRIVATE_KEY_FILE))
+        logging.info(f"\t\tsaving private key to {private_key_path}")
+        with open(private_key_path, "w") as f:
+            f.write(data["privatekey"])
+
+        logging.info("\tSSL certificate has been successfully renewed")
 
 
 def getenv_or_exit(key: str) -> str:
